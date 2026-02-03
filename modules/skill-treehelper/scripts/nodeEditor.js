@@ -1,4 +1,5 @@
 // scripts/node-editor.js
+import { SKILL_KEYS, STAT_KEYS, TRAIT_KEYS, ALL_KEYS } from "./keys.js";
 export class SkillTreeNodeEditor extends FormApplication {
     static get defaultOptions() {
         return foundry.utils.mergeObject(super.defaultOptions, {
@@ -50,12 +51,11 @@ export class SkillTreeNodeEditor extends FormApplication {
                     throw new Error(`Node "${nodeName}" level "${lvl}" must be an object of requirements.`);
                 }
 
+                const keyLowerSet = new Set(ALL_KEYS.map(k => k.toLowerCase()));
+
                 for (const [reqName, reqLevel] of Object.entries(reqs)) {
-                    // Enforce full-name prefixes for requirement keys
-                    if (!/^(skills_|stats_|trait_)/i.test(reqName)) {
-                        throw new Error(
-                            `Requirement key "${reqName}" must start with Skills_, Stats_, or Trait_.`
-                        );
+                    if (!keyLowerSet.has(reqName.toLowerCase())) {
+                        throw new Error(`Unknown key "${reqName}". Must be one of the defined Skills_/Stats_/Traits_.`);
                     }
 
                     const n = Number(reqLevel);
@@ -65,41 +65,18 @@ export class SkillTreeNodeEditor extends FormApplication {
                         );
                     }
                 }
+
             }
         }
     }
 
     _collectKeySuggestions() {
-        const skills = new Set();
-        const stats = new Set();
-        const traits = new Set();
-
-        // Actors: Skills_ / Stats_
-        for (const a of game.actors.contents) {
-            const props = this._getProps(a);
-            for (const k of Object.keys(props)) {
-                if (/^skills_/i.test(k)) skills.add(k);
-                else if (/^stats_/i.test(k)) stats.add(k);
-            }
-        }
-
-        // World items: Trait_
-        for (const i of game.items.contents) {
-            const props = this._getProps(i);
-            for (const k of Object.keys(props)) {
-                if (/^trait_/i.test(k)) traits.add(k);
-            }
-        }
-
-        // Sort
-        const sort = (s) => Array.from(s).sort((a, b) => a.localeCompare(b));
-        const all = new Set([...skills, ...stats, ...traits]);
-
+        const sort = (a) => a.slice().sort((x, y) => x.localeCompare(y));
         return {
-            skills: sort(skills),
-            stats: sort(stats),
-            traits: sort(traits),
-            all: sort(all)
+            skills: sort(SKILL_KEYS),
+            stats: sort(STAT_KEYS),
+            traits: sort(TRAIT_KEYS),
+            all: sort(ALL_KEYS)
         };
     }
 
@@ -112,9 +89,10 @@ export class SkillTreeNodeEditor extends FormApplication {
     // ---------- FormApplication ----------
     async getData() {
         const json = await game.settings.get("skilltree-helper", "nodesJSON");
-        this._suggestions ??= this._collectKeySuggestions();
+        this._suggestions = this._collectKeySuggestions();
         return { json, suggestions: this._suggestions.all };
     }
+
 
     activateListeners(html) {
         super.activateListeners(html);

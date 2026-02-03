@@ -1,5 +1,5 @@
 ﻿// scripts/node-logic.js
-
+import { SKILL_KEYS, STAT_KEYS, TRAIT_KEYS } from "./keys.js";
 function getProps(doc) {
     const gp = globalThis.getProperty ?? ((o, p) => p.split(".").reduce((a, k) => a?.[k], o));
     return gp(doc, "system.props") ?? {};
@@ -30,12 +30,13 @@ function buildKeyMap(obj) {
 
 // Enforce full-name prefixes in nodeData
 function classify(name) {
-    const n = String(name);
-    if (/^skills_/i.test(n)) return "actor";
-    if (/^stats_/i.test(n)) return "actor";
-    if (/^traits_/i.test(n)) return "item";
+    const n = String(name).toLowerCase();
+    if (SKILL_KEYS.some(k => k.toLowerCase() === n)) return "actor";
+    if (STAT_KEYS.some(k => k.toLowerCase() === n)) return "actor";
+    if (TRAIT_KEYS.some(k => k.toLowerCase() === n)) return "item";
     return "unknown";
 }
+
 
 // Auto-progression: level N requires level N-1
 // Applies to Skills_ by default; change this if you want it broader.
@@ -123,6 +124,7 @@ function getHave(actorProps, actorMap, itemProps, itemMap, reqName) {
  * Returns true OR missing[]
  * missing[] entries: { name, need, have, source, keyUsed }
  */
+
 export function checkNode(actor, nodeName, targetLevel, NODES, item = null) {
     const actorProps = getProps(actor);
     const itemProps = item ? getProps(item) : null;
