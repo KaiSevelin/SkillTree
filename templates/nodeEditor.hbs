@@ -1,0 +1,42 @@
+<form class="skilltree-node-editor flexcol">
+  <p>
+    Edit the SkillTree node data (JSON). This is stored per-world.
+  </p>
+
+  <div class="form-group">
+    <label>Node Data (JSON)</label>
+    <textarea name="json" rows="24" style="font-family: monospace; width: 100%;">{{json}}</textarea>
+    <p class="notes">
+      Format: { "NodeName": { "1": { "ReqNode": 1 }, "2": { ... } }, ... }
+    </p>
+  </div>
+
+  <div class="form-group">
+    <div class="flexrow" style="gap: 0.5rem; flex-wrap: wrap;">
+      <button type="button" data-action="validate">
+        <i class="fas fa-check"></i> Validate
+      </button>
+
+      <button type="button" data-action="export">
+        <i class="fas fa-download"></i> Export
+      </button>
+
+      <button type="button" data-action="import">
+        <i class="fas fa-upload"></i> Import
+      </button>
+
+      <button type="button" data-action="reset">
+        <i class="fas fa-undo"></i> Reset to Default
+      </button>
+    </div>
+
+    <!-- hidden file input used by the Import button -->
+    <input type="file" name="importFile" accept="application/json" style="display:none;" />
+  </div>
+
+  <footer class="sheet-footer flexrow">
+    <button type="submit">
+      <i class="fas fa-save"></i> Save
+    </button>
+  </footer>
+</form>
