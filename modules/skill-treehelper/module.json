@@ -1,8 +1,8 @@
 {
-	"id": "skillTree-Helper",
+	"id": "skilltree-helper",
 	"title": "SkillTree Helper",
 	"description": "Global skill/maneuver requirement checker for Custom System Builder props.",
-	"version": "0.0.2",
+	"version": "0.0.5",
 	"compatibility": {
 		"minimum": "13",
 		"verified": "13"
@@ -13,7 +13,7 @@
 		}
 	],
 	"esmodules": [
-		"./modules/init.js"
+		"scripts/init.js"
 	],
 	"templates": [ "templates/node-editor.hbs" ],
 	"url": "https://github.com/KaiSevelin/skillTreeHelper",

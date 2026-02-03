@@ -10,6 +10,6 @@ export const NODES = {
         1: {}
     },
     Feint: {
-        1: { Skills_CombatExpertiseKnife: 1, Skills_CombatExpertiseQuick: 1, fast: 1, }
+        1: { Skills_CombatExpertiseKnife: 1, Skills_CombatExpertiseQuick: 1, Traits_Fast: 1, }
     }
 };
