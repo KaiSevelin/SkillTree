@@ -110,6 +110,7 @@ export class SkillTreeNodeEditor extends FormApplication {
         this._suggestions ??= this._collectKeySuggestions();
         const filter = html.find("select[name='helperFilter']").val() ?? "all";
         this._setDatalistOptions(html, this._suggestions[filter] ?? this._suggestions.all);
+        console.log("SkillTreeNodeEditor activateListeners OK", html[0]);
     }
 
     async _onValidate(html) {
@@ -207,7 +208,7 @@ export class SkillTreeNodeEditor extends FormApplication {
         const key = String(html.find("input[name='helperKey']").val() ?? "").trim();
         if (!key) return;
 
-        if (!/^(skills_|stats_|trait_)/i.test(key)) {
+        if (!/^(skills_|stats_|traita_)/i.test(key)) {
             ui.notifications.warn("Key must start with Skills_, Stats_, or Trait_.");
             return;
         }

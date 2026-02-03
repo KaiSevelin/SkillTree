@@ -1,7 +1,7 @@
 // scripts/init.js
 import { NODES as DEFAULT_NODES } from "./nodeData.js";
 import { checkNode } from "./nodeLogic.js";
-import { SkillTreeNodeEditor } from "./nodeEditor.js";
+import { SkillTreeNodeEditor } from "./node-editor.js";
 
 Hooks.once("init", () => {
     // Store defaults so the editor can reset
@@ -16,7 +16,7 @@ Hooks.once("init", () => {
         default: defaultJSON
     });
 
-    game.settings.registerMenu("skilltree-helper", "nodeEditor", {
+    game.settings.registerMenu("skilltree-helper", "node-editor", {
         name: "SkillTree Node Editor",
         label: "Open Editor",
         hint: "Edit SkillTree nodes in a GUI.",

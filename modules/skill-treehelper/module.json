@@ -2,7 +2,7 @@
 	"id": "skilltree-helper",
 	"title": "SkillTree Helper",
 	"description": "Global skill/maneuver requirement checker for Custom System Builder props.",
-	"version": "0.0.6",
+	"version": "0.0.9",
 	"compatibility": {
 		"minimum": "13",
 		"verified": "13"
