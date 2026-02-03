@@ -97,6 +97,7 @@ export class SkillTreeNodeEditor extends FormApplication {
     activateListeners(html) {
         super.activateListeners(html);
 
+        html.find("[data-action='format']").on("click", () => this._onFormat(html));
         html.find("[data-action='validate']").on("click", () => this._onValidate(html));
         html.find("[data-action='reset']").on("click", () => this._onReset(html));
         html.find("[data-action='export']").on("click", () => this._onExport(html));
@@ -112,7 +113,37 @@ export class SkillTreeNodeEditor extends FormApplication {
         this._setDatalistOptions(html, this._suggestions[filter] ?? this._suggestions.all);
         console.log("SkillTreeNodeEditor activateListeners OK", html[0]);
     }
+    _onFormat(html) {
+        const ta = html.find("textarea[name='json']")[0];
+        if (!ta) return;
 
+        const raw = ta.value;
+
+        try {
+            const obj = this._parseJSON(raw);
+
+            // Optional: sort keys recursively for stable output
+            const sortObject = (value) => {
+                if (Array.isArray(value)) return value.map(sortObject);
+                if (value && typeof value === "object") {
+                    const out = {};
+                    for (const k of Object.keys(value).sort((a, b) => a.localeCompare(b))) {
+                        out[k] = sortObject(value[k]);
+                    }
+                    return out;
+                }
+                return value;
+            };
+
+            const sorted = sortObject(obj);
+            ta.value = JSON.stringify(sorted, null, 2);
+
+            ui.notifications.info("Formatted JSON.");
+        } catch (e) {
+            ui.notifications.error(e.message);
+            console.error(e);
+        }
+    }
     async _onValidate(html) {
         const raw = html.find("textarea[name='json']").val();
         try {
@@ -208,7 +239,7 @@ export class SkillTreeNodeEditor extends FormApplication {
         const key = String(html.find("input[name='helperKey']").val() ?? "").trim();
         if (!key) return;
 
-        if (!/^(skills_|stats_|traita_)/i.test(key)) {
+        if (!/^(skills_|stats_|traits_)/i.test(key)) {
             ui.notifications.warn("Key must start with Skills_, Stats_, or Trait_.");
             return;
         }
