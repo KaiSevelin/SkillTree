@@ -124,7 +124,34 @@ function getHave(actorProps, actorMap, itemProps, itemMap, reqName) {
  * Returns true OR missing[]
  * missing[] entries: { name, need, have, source, keyUsed }
  */
+/**
+ * Returns the highest possible rank an actor could reach
+ * for a given skill, based on current prerequisites.
+ *
+ * - Uses SkillTree rules (including implicit rank chaining)
+ * - Stops at first failed prerequisite
+ * - Does NOT grant anything, only evaluates legality
+ */
+export function getMaxPossibleSkillRank(actor, skillKey, NODES) {
+    if (!actor || !skillKey || !NODES) return 0;
 
+    let rank = 1;
+
+    // Keep increasing rank while requirements are satisfied
+    while (true) {
+        const result = checkNode(actor, skillKey, rank, NODES);
+
+        if (result === true) {
+            rank++;
+            continue;
+        }
+
+        break;
+    }
+
+    // Last successful rank is one below the failure
+    return rank - 1;
+}
 export function checkNode(actor, nodeName, targetLevel, NODES, item = null) {
     const actorProps = getProps(actor);
     const itemProps = item ? getProps(item) : null;
@@ -135,12 +162,45 @@ export function checkNode(actor, nodeName, targetLevel, NODES, item = null) {
     const reqs = resolveRequirements(nodeName, targetLevel, NODES);
     const missing = [];
 
+    // Only check skills for skill granting, not maneuvers or traits
     for (const [reqName, needRaw] of Object.entries(reqs)) {
         const need = asLevel(needRaw);
+
+        // Only check if the requirement is a skill (starts with "Skills_")
+        if (reqName.startsWith("Skills_")) {
+            const { have, source, keyUsed } = getHave(actorProps, actorMap, itemProps, itemMap, reqName);
+
+            if (source === "unknown") {
+                missing.push({ name: reqName, need, have: 0, source: "unknown", keyUsed });
+                continue;
+            }
+
+            if (have < need) {
+                missing.push({ name: reqName, need, have, source, keyUsed });
+            }
+        }
+    }
+
+    return missing.length ? missing : true;
+}
+export function checkManeuverUnlock(actor, maneuverName, NODES, item = null) {
+    const actorProps = getProps(actor);
+    const itemProps = item ? getProps(item) : null;
+
+    const actorMap = buildKeyMap(actorProps);
+    const itemMap = buildKeyMap(itemProps);
+
+    const maneuverReqs = NODES[maneuverName];
+    const missing = [];
+
+    // Check for skill and item trait requirements for the maneuver
+    for (const [reqName, needRaw] of Object.entries(maneuverReqs)) {
+        const need = asLevel(needRaw);
+
+        // Check both skills and item traits
         const { have, source, keyUsed } = getHave(actorProps, actorMap, itemProps, itemMap, reqName);
 
         if (source === "unknown") {
-            // Enforce your "full names only" policy
             missing.push({ name: reqName, need, have: 0, source: "unknown", keyUsed });
             continue;
         }

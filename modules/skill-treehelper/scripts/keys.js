@@ -112,6 +112,8 @@ export const TRAIT_KEYS = [
     "Traits_Receiving",
     "Traits_Reloading",
     "Traits_Tactical",
+    "Traits_Control",
+    "Traits_Shield",
     "Traits_Versatile"
 ];
 
