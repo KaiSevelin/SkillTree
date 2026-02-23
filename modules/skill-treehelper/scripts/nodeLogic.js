@@ -33,6 +33,7 @@ function classify(name) {
     const n = String(name).toLowerCase();
     if (SKILL_KEYS.some(k => k.toLowerCase() === n)) return "actor";
     if (STAT_KEYS.some(k => k.toLowerCase() === n)) return "actor";
+    if (RESOURCE_KEYS.some(k => k.toLowerCase() === n)) return "actor";
     if (TRAIT_KEYS.some(k => k.toLowerCase() === n)) return "item";
     return "unknown";
 }
@@ -132,6 +133,52 @@ function getHave(actorProps, actorMap, itemProps, itemMap, reqName) {
  * - Stops at first failed prerequisite
  * - Does NOT grant anything, only evaluates legality
  */
+/**
+ * Return all maneuvers that are currently usable by this actor with the given item.
+ *
+ * A maneuver is considered "available" if:
+ * - It exists in NODES
+ * - Its key starts with "Maneuvers_"
+ * - checkNode(actor, maneuver, 1, NODES, item) === true
+ *
+ * @param {object} actor Foundry Actor document
+ * @param {object} NODES skill tree nodes object
+ * @param {object|null} item Foundry Item document (weapon), used for Traits_ checks
+ * @param {object} [opts]
+ * @param {boolean} [opts.includeFailures=false] If true, returns {available, unavailable}
+ * @param {RegExp} [opts.maneuverKeyPattern=/^maneuvers_/i] Override how maneuvers are detected
+ * @returns {string[]|{available: string[], unavailable: Array<{name: string, missing: any}>}}
+ */
+export function getAvailableManeuvers(actor, NODES, item = null, opts = {}) {
+    const {
+        includeFailures = false,
+        maneuverKeyPattern = /^maneuvers_/i
+    } = opts;
+
+    const available = [];
+    const unavailable = [];
+
+    for (const nodeName of Object.keys(NODES ?? {})) {
+        if (!maneuverKeyPattern.test(nodeName)) continue;
+
+        // Most maneuvers are level "1"; if you later add ranked maneuvers,
+        // you can extend this to check higher levels too.
+        const result = checkNode(actor, nodeName, 1, NODES, item);
+
+        if (result === true) {
+            available.push(nodeName);
+        } else if (includeFailures) {
+            unavailable.push({ name: nodeName, missing: result });
+        }
+    }
+
+    available.sort((a, b) => a.localeCompare(b));
+
+    if (!includeFailures) return available;
+
+    unavailable.sort((a, b) => a.name.localeCompare(b.name));
+    return { available, unavailable };
+}
 export function getMaxPossibleSkillRank(actor, skillKey, NODES) {
     if (!actor || !skillKey || !NODES) return 0;
 
@@ -182,6 +229,34 @@ export function checkNode(actor, nodeName, targetLevel, NODES, item = null) {
     }
 
     return missing.length ? missing : true;
+}
+/**
+ * Returns the highest possible rank an actor could reach
+ * for a given skill, based on current prerequisites.
+ *
+ * - Uses SkillTree rules (including implicit rank chaining)
+ * - Stops at first failed prerequisite
+ * - Does NOT grant anything, only evaluates legality
+ */
+export function getMaxPossibleSkillRank(actor, skillKey, NODES) {
+    if (!actor || !skillKey || !NODES) return 0;
+
+    let rank = 1;
+
+    // Keep increasing rank while requirements are satisfied
+    while (true) {
+        const result = checkNode(actor, skillKey, rank, NODES);
+
+        if (result === true) {
+            rank++;
+            continue;
+        }
+
+        break;
+    }
+
+    // Last successful rank is one below the failure
+    return rank - 1;
 }
 export function checkManeuverUnlock(actor, maneuverName, NODES, item = null) {
     const actorProps = getProps(actor);

@@ -117,8 +117,18 @@ export const TRAIT_KEYS = [
     "Traits_Versatile"
 ];
 
+export const RESOURCE_KEYS = [
+    "DexterityPoint",
+    "StrengthPoint",
+    "IntelligencePoint",
+    "CritPoint",
+    "CharismaPoint",
+    "StaminaPoint",
+    "FaithPoint"
+];
 export const ALL_KEYS = [
     ...SKILL_KEYS,
     ...STAT_KEYS,
-    ...TRAIT_KEYS
+    ...TRAIT_KEYS,
+    ...RESOURCE_KEYS
 ];
