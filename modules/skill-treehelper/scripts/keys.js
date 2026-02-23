@@ -114,7 +114,35 @@ export const TRAIT_KEYS = [
     "Traits_Tactical",
     "Traits_Control",
     "Traits_Shield",
-    "Traits_Versatile"
+    "Traits_Versatile",
+    "Traits_RangedWeapon",
+    "Traits_Bow",
+    "Traits_SimpleRanged",
+    "Traits_AdvancedRanged",
+    "Traits_Crossbow",
+    "Traits_MeleeWeapon",
+    "Traits_Knife",
+    "Traits_Blade",
+    "Traits_Blunt",
+    "Traits_PoleArm",
+    "Traits_Thrown",
+    "Traits_Firearm",
+    "Traits_LightFirearm",
+    "Traits_HeavyFirearm",
+    "Traits_MountedWeapon",
+    "Traits_Lance",
+    "Traits_Unarmed",
+    "Traits_SmallShield",
+    "Traits_LargeShield",
+
+    // armors
+    "Traits_LightArmor",
+    "Traits_MediumArmor",
+    "Traits_HeavyArmor",
+    "Traits_Encumbering",
+    "Traits_Resistance",
+    "Traits_Soft",
+    "Traits_VerySoft"
 ];
 
 export const RESOURCE_KEYS = [

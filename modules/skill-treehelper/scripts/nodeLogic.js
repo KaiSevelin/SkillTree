@@ -1,5 +1,5 @@
 ﻿// scripts/node-logic.js
-import { SKILL_KEYS, STAT_KEYS, TRAIT_KEYS } from "./keys.js";
+import { SKILL_KEYS, STAT_KEYS, TRAIT_KEYS, RESOURCE_KEYS } from "./keys.js";
 function getProps(doc) {
     const gp = globalThis.getProperty ?? ((o, p) => p.split(".").reduce((a, k) => a?.[k], o));
     return gp(doc, "system.props") ?? {};
@@ -27,7 +27,44 @@ function buildKeyMap(obj) {
     for (const k of Object.keys(obj ?? {})) m.set(String(k).toLowerCase(), k);
     return m;
 }
+function makeMergedItemProps(weapon, armor) {
+    const merged = {};
 
+    // ----------------
+    // Weapon traits
+    // ----------------
+    if (weapon) {
+        Object.assign(merged, getProps(weapon));
+    } else {
+        // ✅ Unarmed defaults
+        merged["Traits_Unarmed"] = 1;
+        merged["Traits_Control"] = 1;
+        merged["Traits_Fast"] = 1;
+        merged["Traits_Disarming"] = 1;
+    }
+
+    // ----------------
+    // Armor traits
+    // ----------------
+    if (armor) {
+        Object.assign(merged, getProps(armor));
+
+        const hasArmorTrait =
+            merged.Traits_LightArmor ||
+            merged.Traits_MediumArmor ||
+            merged.Traits_HeavyArmor;
+
+        if (!hasArmorTrait) {
+            // Defensive fallback
+            merged.Traits_LightArmor = 1;
+        }
+    } else {
+        // ✅ No armor = light armor
+        merged["Traits_LightArmor"] = 1;
+    }
+
+    return merged;
+}
 // Enforce full-name prefixes in nodeData
 function classify(name) {
     const n = String(name).toLowerCase();
@@ -96,7 +133,7 @@ function resolveRequirements(nodeName, targetLevel, NODES) {
  * - Traits_ from item props (case-insensitive key match)
  * Enforces full-name style: if name doesn't start with Skills_/Stats_/Traits_, it is "unknown"
  */
-function getHave(actorProps, actorMap, itemProps, itemMap, reqName) {
+function getHave(actorProps, actorMap, mergedItemProps, mergedItemMap, reqName) {
     const kind = classify(reqName);
     const reqLower = String(reqName).toLowerCase();
 
@@ -107,13 +144,11 @@ function getHave(actorProps, actorMap, itemProps, itemMap, reqName) {
     }
 
     if (kind === "item") {
-        if (!itemProps) return { have: 0, source: "item", keyUsed: reqName }; // no item provided
-        const actual = itemMap.get(reqLower);
-        const have = actual ? asLevel(itemProps[actual]) : 0;
+        const actual = mergedItemMap.get(reqLower);
+        const have = actual ? asLevel(mergedItemProps[actual]) : 0;
         return { have, source: "item", keyUsed: actual ?? reqName };
     }
 
-    // Unknown requirement key format (doesn't follow your naming rules)
     return { have: 0, source: "unknown", keyUsed: reqName };
 }
 
@@ -149,11 +184,8 @@ function getHave(actorProps, actorMap, itemProps, itemMap, reqName) {
  * @param {RegExp} [opts.maneuverKeyPattern=/^maneuvers_/i] Override how maneuvers are detected
  * @returns {string[]|{available: string[], unavailable: Array<{name: string, missing: any}>}}
  */
-export function getAvailableManeuvers(actor, NODES, item = null, opts = {}) {
-    const {
-        includeFailures = false,
-        maneuverKeyPattern = /^maneuvers_/i
-    } = opts;
+export function getAvailableManeuvers(actor, NODES, weapon = null, armor = null, opts = {}) {
+    const { includeFailures = false, maneuverKeyPattern = /^maneuvers_/i } = opts;
 
     const available = [];
     const unavailable = [];
@@ -161,9 +193,7 @@ export function getAvailableManeuvers(actor, NODES, item = null, opts = {}) {
     for (const nodeName of Object.keys(NODES ?? {})) {
         if (!maneuverKeyPattern.test(nodeName)) continue;
 
-        // Most maneuvers are level "1"; if you later add ranked maneuvers,
-        // you can extend this to check higher levels too.
-        const result = checkNode(actor, nodeName, 1, NODES, item);
+        const result = checkNode(actor, nodeName, 1, NODES, weapon, armor);
 
         if (result === true) {
             available.push(nodeName);
@@ -173,107 +203,44 @@ export function getAvailableManeuvers(actor, NODES, item = null, opts = {}) {
     }
 
     available.sort((a, b) => a.localeCompare(b));
-
     if (!includeFailures) return available;
 
     unavailable.sort((a, b) => a.name.localeCompare(b.name));
     return { available, unavailable };
 }
-export function getMaxPossibleSkillRank(actor, skillKey, NODES) {
+export function getMaxPossibleSkillRank(actor, skillKey, NODES, weapon = null, armor = null) {
     if (!actor || !skillKey || !NODES) return 0;
 
     let rank = 1;
-
-    // Keep increasing rank while requirements are satisfied
-    while (true) {
-        const result = checkNode(actor, skillKey, rank, NODES);
-
-        if (result === true) {
-            rank++;
-            continue;
-        }
-
-        break;
+    while (checkNode(actor, skillKey, rank, NODES, weapon, armor) === true) {
+        rank++;
     }
-
-    // Last successful rank is one below the failure
     return rank - 1;
 }
-export function checkNode(actor, nodeName, targetLevel, NODES, item = null) {
+/**
+ * Unified checker.
+ * Always accepts ONE weapon and ONE armor.
+ * - weapon: item that provides weapon Traits_
+ * - armor: worn armor item that provides armor Traits_
+ * - If armor is null, the actor is treated as having Traits_LightArmor = 1
+ *
+ * Returns true OR missing[] entries: { name, need, have, source, keyUsed }
+ */
+export function checkNode(actor, nodeName, targetLevel, NODES, weapon = null, armor = null) {
     const actorProps = getProps(actor);
-    const itemProps = item ? getProps(item) : null;
 
     const actorMap = buildKeyMap(actorProps);
-    const itemMap = buildKeyMap(itemProps);
+
+    // Merge weapon+armor props into one trait context
+    const mergedItemProps = makeMergedItemProps(weapon, armor);
+    const mergedItemMap = buildKeyMap(mergedItemProps);
 
     const reqs = resolveRequirements(nodeName, targetLevel, NODES);
     const missing = [];
 
-    // Only check skills for skill granting, not maneuvers or traits
     for (const [reqName, needRaw] of Object.entries(reqs)) {
         const need = asLevel(needRaw);
-
-        // Only check if the requirement is a skill (starts with "Skills_")
-        if (reqName.startsWith("Skills_")) {
-            const { have, source, keyUsed } = getHave(actorProps, actorMap, itemProps, itemMap, reqName);
-
-            if (source === "unknown") {
-                missing.push({ name: reqName, need, have: 0, source: "unknown", keyUsed });
-                continue;
-            }
-
-            if (have < need) {
-                missing.push({ name: reqName, need, have, source, keyUsed });
-            }
-        }
-    }
-
-    return missing.length ? missing : true;
-}
-/**
- * Returns the highest possible rank an actor could reach
- * for a given skill, based on current prerequisites.
- *
- * - Uses SkillTree rules (including implicit rank chaining)
- * - Stops at first failed prerequisite
- * - Does NOT grant anything, only evaluates legality
- */
-export function getMaxPossibleSkillRank(actor, skillKey, NODES) {
-    if (!actor || !skillKey || !NODES) return 0;
-
-    let rank = 1;
-
-    // Keep increasing rank while requirements are satisfied
-    while (true) {
-        const result = checkNode(actor, skillKey, rank, NODES);
-
-        if (result === true) {
-            rank++;
-            continue;
-        }
-
-        break;
-    }
-
-    // Last successful rank is one below the failure
-    return rank - 1;
-}
-export function checkManeuverUnlock(actor, maneuverName, NODES, item = null) {
-    const actorProps = getProps(actor);
-    const itemProps = item ? getProps(item) : null;
-
-    const actorMap = buildKeyMap(actorProps);
-    const itemMap = buildKeyMap(itemProps);
-
-    const maneuverReqs = NODES[maneuverName];
-    const missing = [];
-
-    // Check for skill and item trait requirements for the maneuver
-    for (const [reqName, needRaw] of Object.entries(maneuverReqs)) {
-        const need = asLevel(needRaw);
-
-        // Check both skills and item traits
-        const { have, source, keyUsed } = getHave(actorProps, actorMap, itemProps, itemMap, reqName);
+        const { have, source, keyUsed } = getHave(actorProps, actorMap, mergedItemProps, mergedItemMap, reqName);
 
         if (source === "unknown") {
             missing.push({ name: reqName, need, have: 0, source: "unknown", keyUsed });
@@ -287,3 +254,5 @@ export function checkManeuverUnlock(actor, maneuverName, NODES, item = null) {
 
     return missing.length ? missing : true;
 }
+
+

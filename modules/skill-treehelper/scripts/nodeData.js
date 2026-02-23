@@ -124,7 +124,39 @@ export const NODES = {
                 "Traits_PointBlank": 1
         }
     },
+    "Maneuvers_SuppressingFire": {
+        "1": {
+            "Skills_CombatExpertisePrecision": 2,
+            "StaminaPoint": 1,
+            "_any": [
+                { "Traits_RangedWeapon": 1 },
+                { "Traits_Firearm": 1 }
+            ]
+        }
+    },
+    "Maneuvers_Evade": {
+        "1": {
+            "Skills_CombatExpertiseDefense": 1,
+            "DexterityPoint": 1,
+            "Traits_LightArmor": 1
+        }
+    },
+    "Maneuvers_Press": {
+        "1": {
+            "Skills_CombatExpertiseOffense": 1,
+            "StaminaPoint": 1
+        }
+    },
 
+    "Maneuvers_DesperateDefense": {
+        "1": {}
+    },
+
+    "Maneuvers_Overwatch": {
+        "1": {
+            "Skills_CombatExpertiseQuick": 2
+        }
+    },
     "Maneuvers_Versatile": {
         "1": {
             "Skills_CombatExpertiseQuick": 2,
@@ -245,7 +277,7 @@ export const NODES = {
         }
     },
 
-    "Maneuvers_Hooking": {
+    "Maneuvers_Hook": {
         "1": {
             "Skills_CombatExpertiseDefense": 2,
                 "Traits_Hooking": 1,
@@ -253,7 +285,7 @@ export const NODES = {
         }
     },
 
-    "Maneuvers_ArmorBreaker": {
+    "Maneuvers_ArmorBreak": {
         "1": {
             "Skills_CombatExpertiseOffense": 1,
                 "Traits_ArmorBreaking": 1,
