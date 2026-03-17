@@ -1,0 +1,22 @@
+{
+	"id": "skilltreehelper",
+	"title": "SkillTree Helper",
+	"description": "Item-based skill tree graph with prerequisite levels and cycle-safe validation.",
+	"version": "0.4.20",
+	"compatibility": {
+		"minimum": "13",
+		"verified": "13"
+	},
+	"authors": [
+		{
+			"name": "Kai"
+		}
+	],
+	"esmodules": [
+		"scripts/init-v2.js"
+	],
+	"templates": [ "templates/node-editor.html" ],
+	"url": "https://github.com/KaiSevelin/skillTreeHelper",
+	"manifest": "https://raw.githubusercontent.com/KaiSevelin/skillTreeHelper/master/module.json",
+	"download": "https://raw.githubusercontent.com/KaiSevelin/skillTreeHelper/master/skillTreeHelper.zip"
+}
